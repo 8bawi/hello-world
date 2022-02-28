@@ -27,7 +27,8 @@ jobs:
       - image: alpine:latest
     
     steps:
-      - run: cat output.txt
+      - run: |
+          pwd
       - attach_workspace:
           at: /tmp/workspace/
 workflows:
