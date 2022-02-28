@@ -9,17 +9,17 @@ orbs:
   welcome: circleci/welcome-orb@0.4.1
 # Orchestrate or schedule a set of jobs
 commands:
-  pipePrint:
+  pipeprint:
     description: "A command to print the pipeline ID"
     steps:
       - run: echo $CIRCLE_WORKFLOW_ID
 
 jobs:
-  pipePrint_output:
+  pipe_print_output:
     <<: *defaults
     
     steps:
-      - pipePrint
+      - pipeprint
 
 workflows:
   # Name the workflow "welcome"
@@ -27,5 +27,5 @@ workflows:
     # Run the welcome/run job in its own container
     jobs:
       - welcome/run
-      - pipePrint_output
+      - pipe_print_output
 
