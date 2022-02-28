@@ -27,10 +27,12 @@ jobs:
       - image: alpine:latest
     
     steps:
+       attach_workspace:
+          at: /tmp/workspace/
       - run: |
           pwd
-      - attach_workspace:
-          at: /tmp/workspace/
+          cat output.txt
+
 workflows:
   # Name the workflow "welcome"
   welcome:
