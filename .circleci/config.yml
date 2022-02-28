@@ -11,7 +11,7 @@ jobs:
       - image: alpine:latest
     
     steps:
-      - run: echo "hello world" > /tmp/workspace/output.txt
+      - run: echo "hello world" > output.txt
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
