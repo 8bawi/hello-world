@@ -23,7 +23,7 @@ jobs:
     
     steps:
       - run: cat output.txt
-      - attach_to_workspace:
+      - attach_workspace:
           at: /tmp/workspace
 workflows:
   # Name the workflow "welcome"
