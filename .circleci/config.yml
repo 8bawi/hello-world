@@ -27,7 +27,7 @@ jobs:
       - image: alpine:latest
     
     steps:
-       attach_workspace:
+      - attach_workspace:
           at: /tmp/workspace/
       - run: |
           pwd
