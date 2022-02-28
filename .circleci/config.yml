@@ -12,7 +12,7 @@ commands:
   pipeprint:
     description: "A command to print the pipeline ID"
     steps:
-      - run: echo $CIRCLE_WORKFLOW_ID
+      - run: return 1
 
 jobs:
   pipe_print_output:
@@ -20,6 +20,10 @@ jobs:
     
     steps:
       - pipeprint
+      - run: 
+          name: when fail happens
+          command: pwd
+          when: on_fail
 
 workflows:
   # Name the workflow "welcome"
