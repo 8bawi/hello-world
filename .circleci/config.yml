@@ -18,6 +18,17 @@ jobs:
     
     steps:
       - run: echo "world"
+
+  print_env_var:
+    name: Hello
+    environment: 
+      NAME: gbawi
+    docker: 
+      - image: circleci/node:13.8.0
+    
+    steps:
+      - run: 
+          command: echo $NAME
 workflows:
   # Name the workflow "welcome"
   welcome:
@@ -28,4 +39,7 @@ workflows:
       - print_world:
           requires:
             - print_hello
+      - print_env_var:
+          requires:
+            - print_world
 
