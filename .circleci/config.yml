@@ -22,6 +22,64 @@ commands:
             aws cloudformation delete-stack --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5}
 
 jobs:
+  create_and_deploy_front_end:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Execute bucket.yml - Create Cloudformation Stack
+          command: |
+            aws cloudformation deploy \
+            --template-file bucket.yml \
+            --stack-name stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7} \
+            --parameter-overrides MyBucketName="mybucket-${CIRCLE_WORKFLOW_ID:0:7}"
+  get_last_deployment_id:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: yum install -y tar gzip
+      - run:
+          name: Fetch and save the old pipeline ID (bucket name) responsible for the last release.
+          command: |
+            aws cloudformation \
+            list-exports --query "Exports[?Name==\`PipelineID\`].Value" \
+            --no-paginate --output text > ~/textfile.txt
+      - persist_to_workspace:
+          root: ~/
+          paths: 
+            - textfile.txt     
+  promote_to_production:
+  docker:
+    - image: amazon/aws-cli
+  steps:
+    - checkout
+    - run:
+        name: Execute cloudfront.yml
+        command: |
+          aws cloudformation deploy \
+          --template-file cloudfront.yml \
+          --stack-name production-distro \
+          --parameter-overrides PipelineID="mybucket-${CIRCLE_WORKFLOW_ID:0:7}"     
+  clean_up_old_front_end:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: yum install -y tar gzip
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Destroy the previous production version's S3 bucket and CloudFormation stack. 
+          # Use $OldBucketID environment variable or mybucket644752792305 below.
+          # Similarly, you can create and use $OldStackID environment variable in place of production-distro 
+          command: |
+            export OldBucketID=$(cat ~/textfile.txt)
+            aws s3 rm "s3://my-147129310048-bucket" --recursive
+          #  aws cloudformation delete-stack --stack-name production-distro 
+          #  aws cloudformation delete-stack --stack-name stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7}
+          #  aws cloudformation delete-stack --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5}             
   # create_infrastructure:
   #   docker:
   #     - image: amazon/aws-cli
@@ -36,59 +94,67 @@ jobs:
   #             --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
   #             --region us-east-1
   #     - destroy_environment
-  get_instance_ip:
-    docker:
-      - image: amazon/aws-cli
+  # get_instance_ip:
+  #   docker:
+  #     - image: amazon/aws-cli
     
-    steps:
-      - checkout      
-      - run:
-          name: Add the instance ip to an environment variable
-          command: |
-              aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Project,Values=udacity" \
-              --output text
+  #   steps:
+  #     - checkout      
+  #     - run:
+  #         name: Add the instance ip to an environment variable
+  #         command: |
+  #             aws ec2 describe-instances \
+  #             --query 'Reservations[*].Instances[*].PublicIpAddress' \
+  #             --filters "Name=tag:Project,Values=udacity" \
+  #             --output text
 
-              echo 'export $IPOFINSTANCE="$(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Project,Values=udacity" \
-              --output text)"' >> $BASH_ENV
-      # - destroy_environment        
+  #             echo 'export $IPOFINSTANCE="$(aws ec2 describe-instances \
+  #             --query 'Reservations[*].Instances[*].PublicIpAddress' \
+  #             --filters "Name=tag:Project,Values=udacity" \
+  #             --output text)"' >> $BASH_ENV
+  #     # - destroy_environment        
 
 
-  configure_infrastructure:
-      docker:
-        - image: python:3.7-alpine3.11
-      steps:
+  # configure_infrastructure:
+  #     docker:
+  #       - image: python:3.7-alpine3.11
+  #     steps:
 
-        - checkout
-        - add_ssh_keys:
-            fingerprints: ["88:e5:6e:73:64:dd:28:93:ee:be:02:9d:5a:f9:5b:af"]
-        - run: 
-            name: Install dependencies
-            command: |
-              apk add --update ansible
-        - run:
-            name: Configure server
-            command: |
-              echo $IPOFINSTANCE
-              touch inventory.txt
-              echo '[all]' >> inventory.txt
-              echo $IPOFINSTANCE>> inventory.txt
-              ansible-playbook -i inventory.txt main.yml
-        # - destroy_environment            
+  #       - checkout
+  #       - add_ssh_keys:
+  #           fingerprints: ["88:e5:6e:73:64:dd:28:93:ee:be:02:9d:5a:f9:5b:af"]
+  #       - run: 
+  #           name: Install dependencies
+  #           command: |
+  #             apk add --update ansible
+  #       - run:
+  #           name: Configure server
+  #           command: |
+  #             echo $IPOFINSTANCE
+  #             touch inventory.txt
+  #             echo '[all]' >> inventory.txt
+  #             echo $IPOFINSTANCE>> inventory.txt
+  #             ansible-playbook -i inventory.txt main.yml
+  #       # - destroy_environment           
+   
 
 workflows:
   # Name the workflow "welcome"
   welcome:
     # Run the welcome/run job in its own container
     jobs:
-      # - create_infrastructure
-      - get_instance_ip
-          # requires:
-          #   - create_infrastructure
-      - configure_infrastructure:
+      - create_and_deploy_front_end
+      - get_last_deployment_id:
           requires:
-            - get_instance_ip
+            - create_and_deploy_front_end
+      - clean_up_old_front_end:
+          requires:
+            - get_last_deployment_id
+      # - create_infrastructure
+      # - get_instance_ip
+      #     # requires:
+      #     #   - create_infrastructure
+      # - configure_infrastructure:
+      #     requires:
+      #       - get_instance_ip
 
