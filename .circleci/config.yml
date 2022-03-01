@@ -55,7 +55,7 @@ jobs:
   configure_infrastructure:
       -checkout
       - add_ssh_keys:
-        fingerprints: ["88:e5:6e:73:64:dd:28:93:ee:be:02:9d:5a:f9:5b:af"]
+          fingerprints: ["88:e5:6e:73:64:dd:28:93:ee:be:02:9d:5a:f9:5b:af"]
       - run: 
           name: Install dependencies
           command: |
