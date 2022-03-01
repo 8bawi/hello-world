@@ -36,6 +36,37 @@ jobs:
               --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
               --region us-east-1
       - destroy_environment
+  get_instance_ip:
+    docker:
+      - image: amazon/aws-cli
+    
+    steps:
+      - checkout      
+      - run:
+          name: Add the instance ip to an environment variable
+          command: |
+              echo 'export $IPOFINSTANCE="$(aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Project,Values=udacity" \
+              --output text)"' >> $BASH_ENV
+                   
+
+
+  configure_infrastructure:
+      -checkout
+      - add_ssh_keys:
+        fingerprints: ["88:e5:6e:73:64:dd:28:93:ee:be:02:9d:5a:f9:5b:af"]
+      - run: 
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+      - run:
+          name: Configure server
+          command: |
+            touch inventory.txt
+            echo '[all]' >> inventory.txt
+            echo $IPOFINSTANCE>> inventory.txt
+            ansible-playbook -i inventory.txt main.yml
 
 workflows:
   # Name the workflow "welcome"
@@ -43,4 +74,10 @@ workflows:
     # Run the welcome/run job in its own container
     jobs:
       - create_infrastructure
+      - get_instance_ip:
+          requires:
+            - create_infrastructure
+      - configure_infrastructure:
+          reqiures:
+            - get_instance_ip
 
