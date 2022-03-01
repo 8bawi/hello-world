@@ -72,7 +72,6 @@ jobs:
         - run:
             name: Configure server
             command: |
-              source $BASH_ENV
               echo $IPOFINSTANCE
               touch inventory.txt
               echo '[all]' >> inventory.txt
