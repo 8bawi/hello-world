@@ -22,20 +22,20 @@ commands:
             aws cloudformation delete-stack --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5}
 
 jobs:
-  create_infrastructure:
-    docker:
-      - image: amazon/aws-cli
+  # create_infrastructure:
+  #   docker:
+  #     - image: amazon/aws-cli
     
-    steps:
-      - checkout
-      - run: 
-          name: Create Cloudformation Stack
-          command: |
-              aws cloudformation deploy \
-              --template-file template.yml \
-              --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
-              --region us-east-1
-      - destroy_environment
+  #   steps:
+  #     - checkout
+  #     - run: 
+  #         name: Create Cloudformation Stack
+  #         command: |
+  #             aws cloudformation deploy \
+  #             --template-file template.yml \
+  #             --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
+  #             --region us-east-1
+  #     - destroy_environment
   get_instance_ip:
     docker:
       - image: amazon/aws-cli
@@ -54,7 +54,7 @@ jobs:
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Project,Values=udacity" \
               --output text)"' >> $BASH_ENV
-      - destroy_environment        
+      # - destroy_environment        
 
 
   configure_infrastructure:
@@ -77,17 +77,17 @@ jobs:
               echo '[all]' >> inventory.txt
               echo $IPOFINSTANCE>> inventory.txt
               ansible-playbook -i inventory.txt main.yml
-        - destroy_environment            
+        # - destroy_environment            
 
 workflows:
   # Name the workflow "welcome"
   welcome:
     # Run the welcome/run job in its own container
     jobs:
-      - create_infrastructure
-      - get_instance_ip:
-          requires:
-            - create_infrastructure
+      # - create_infrastructure
+      - get_instance_ip
+          # requires:
+          #   - create_infrastructure
       - configure_infrastructure:
           requires:
             - get_instance_ip
