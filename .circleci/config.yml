@@ -82,6 +82,6 @@ workflows:
           requires:
             - create_infrastructure
       - configure_infrastructure:
-          reqiures:
+          requires:
             - get_instance_ip
 
