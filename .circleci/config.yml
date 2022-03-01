@@ -6,30 +6,42 @@ version: 2.1
 # Use a package of configuration called an orb.
 orbs:
   # Declare a dependency on the welcome-orb
-  welcome: circleci/welcome-orb@0.4.1
+  aws-cli: circleci/aws-cli@2.0.3
 # Orchestrate or schedule a set of jobs
 commands:
-  pipeprint:
-    description: "A command to print the pipeline ID"
+#   pipeprint:
+#     description: "A command to print the pipeline ID"
+#     steps:
+#       - run: return 1
+  destroy_environment:
     steps:
-      - run: return 1
+      - run: 
+          name: Destroy environment
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5}
 
 jobs:
-  pipe_print_output:
-    <<: *defaults
+  create_infrastructure:
+    docker:
+      - image: amazon/aws-cli
     
     steps:
-      - pipeprint
+      - checkout
       - run: 
-          name: when fail happens
-          command: pwd
+          name: Create Cloudformation Stack
+          command: |
+              aws cloudformation deploy \
+                --template-file template.yml \
+                --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
+                --region us-east-1
           when: on_fail
+      - destroy_environment
 
 workflows:
   # Name the workflow "welcome"
   welcome:
     # Run the welcome/run job in its own container
     jobs:
-      - welcome/run
-      - pipe_print_output
+      - create_infrastructure
 
