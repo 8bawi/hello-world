@@ -45,11 +45,16 @@ jobs:
       - run:
           name: Add the instance ip to an environment variable
           command: |
+              aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Project,Values=udacity" \
+              --output text
+
               echo 'export $IPOFINSTANCE="$(aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --filters "Name=tag:Project,Values=udacity" \
               --output text)"' >> $BASH_ENV
-                   
+      - destroy_environment        
 
 
   configure_infrastructure:
@@ -71,6 +76,7 @@ jobs:
               echo '[all]' >> inventory.txt
               echo $IPOFINSTANCE>> inventory.txt
               ansible-playbook -i inventory.txt main.yml
+        - destroy_environment            
 
 workflows:
   # Name the workflow "welcome"
