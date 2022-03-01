@@ -53,20 +53,24 @@ jobs:
 
 
   configure_infrastructure:
-      -checkout
-      - add_ssh_keys:
-          fingerprints: ["88:e5:6e:73:64:dd:28:93:ee:be:02:9d:5a:f9:5b:af"]
-      - run: 
-          name: Install dependencies
-          command: |
-            apk add --update ansible
-      - run:
-          name: Configure server
-          command: |
-            touch inventory.txt
-            echo '[all]' >> inventory.txt
-            echo $IPOFINSTANCE>> inventory.txt
-            ansible-playbook -i inventory.txt main.yml
+      docker:
+        - image: python:3.7-alpine3.11
+      steps:
+
+        -checkout
+        - add_ssh_keys:
+            fingerprints: ["88:e5:6e:73:64:dd:28:93:ee:be:02:9d:5a:f9:5b:af"]
+        - run: 
+            name: Install dependencies
+            command: |
+              apk add --update ansible
+        - run:
+            name: Configure server
+            command: |
+              touch inventory.txt
+              echo '[all]' >> inventory.txt
+              echo $IPOFINSTANCE>> inventory.txt
+              ansible-playbook -i inventory.txt main.yml
 
 workflows:
   # Name the workflow "welcome"
